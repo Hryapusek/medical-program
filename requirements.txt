@@ -1,5 +1,6 @@
 PyQt5
 sqlalchemy
+psycopg2-binary
 dotenv
 pydantic
 pydantic-settings
