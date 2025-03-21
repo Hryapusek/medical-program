@@ -176,6 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 session.execute(statement)
                 session.commit()
                 self.patients_table.select()
+                QtWidgets.QMessageBox.information(self, "Создано", "Пациент успешно создан")
                 return True
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Ошибка", str(e))
@@ -202,6 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 session.execute(statement)
                 session.commit()
                 self.patients_table.select()
+                QtWidgets.QMessageBox.information(self, "Удалено", "Пациент успешно удален")
                 return True
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Ошибка", str(e))
