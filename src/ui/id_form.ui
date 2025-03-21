@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>CreatePatientForm</class>
- <widget class="QDialog" name="CreatePatientForm">
+ <class>EnterIdForm</class>
+ <widget class="QDialog" name="EnterIdForm">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>184</width>
-    <height>81</height>
+    <height>102</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,6 +16,16 @@
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QLabel" name="titleLabel">
+       <property name="text">
+        <string/>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
@@ -69,7 +79,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>CreatePatientForm</receiver>
+   <receiver>EnterIdForm</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -85,7 +95,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>CreatePatientForm</receiver>
+   <receiver>EnterIdForm</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

@@ -1,15 +1,16 @@
 from enum import Enum
 from datetime import datetime
-from typing import Any
+from typing import Any, Callable
 
 from result import Ok, Err, Result, is_ok, is_err
 
 from PyQt5 import QtWidgets, QtSql, QtCore
-from sqlalchemy.sql import insert
+from sqlalchemy.sql import insert, delete
 from sqlalchemy.orm import sessionmaker
 
 from ui.ui_main_window import Ui_MainWindow
 from ui.ui_create_patient import Ui_CreatePatientForm
+from ui.ui_id_form import Ui_EnterIdForm
 from settings import settings
 from database_api.schema import init_db, Patient, main_engine
 
@@ -32,9 +33,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.database.setPassword(settings.database_password)
 
         self.sessionmaker = sessionmaker(main_engine)
-
+        self.setup_patients_tab()
         self.connect_to_database_clicked()
-        self.ui.addPatientBtn.clicked.connect(self.on_add_patient_clicked)
+        
+    def setup_patients_tab(self):
+        self.ui.addPatientBtn.clicked.connect(self.create_crud_button_handler(self.create_create_patient_dialog, self.collect_create_patient_from_form, self.try_create_patient))
+        self.ui.deletePatientBtn.clicked.connect(self.create_crud_button_handler(self.create_delete_patient_dialog, self.collect_id_from_form, self.try_delete_patient))
 
     def connect_to_database_clicked(self):
         if self.database.open():
@@ -122,22 +126,22 @@ class MainWindow(QtWidgets.QMainWindow):
             central_status_layout.addWidget(self.create_connect_button())
         self.ui.statusbar.addWidget(central_status_widget)
 
-    def on_add_patient_clicked(self):
-        dialog = self.create_create_patient_dialog()
-        fin = Finally(lambda: dialog.deleteLater())
-        while True:
-            result = dialog.exec()
-            if result == QtWidgets.QDialog.DialogCode.Accepted:
-                patient_dict_result = self.collect_patient_from_form(dialog.ui)
-                if is_err(patient_dict_result):
-                    QtWidgets.QMessageBox.critical(self, "Ошибка", patient_dict_result.unwrap_err())
-                    continue
-                if self.try_create_patient(patient_dict_result.unwrap()):
-                    return
-                else:
-                    continue
-            else:
+    def create_crud_button_handler(self, dialog_factory: Callable, parameters_collecter: Callable[..., Result], on_success: Callable[..., bool]):
+        def button_handler():
+            dialog = dialog_factory()
+            fin = Finally(lambda: dialog.deleteLater())
+            while True:
+                result = dialog.exec()
+                if result == QtWidgets.QDialog.DialogCode.Accepted:
+                    patient_dict_result = parameters_collecter(dialog.ui)
+                    if is_err(patient_dict_result):
+                        QtWidgets.QMessageBox.critical(self, "Ошибка", patient_dict_result.unwrap_err())
+                        continue
+                    if not on_success(patient_dict_result.unwrap()):
+                        continue
                 return
+
+        return button_handler
 
     def create_create_patient_dialog(self) -> QtWidgets.QDialog:
         dialog = QtWidgets.QDialog(self)
@@ -145,7 +149,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.ui.setupUi(dialog)
         return dialog
 
-    def collect_patient_from_form(self, form: Ui_CreatePatientForm) -> Result[dict[str, Any], str]:
+    def collect_create_patient_from_form(self, form: Ui_CreatePatientForm) -> Result[dict[str, Any], str]:
         patient_dict = {}
         patient_dict["first_name"] = form.nameEdit.text()
         patient_dict["last_name"] = form.surnameEdit.text()
@@ -166,6 +170,32 @@ class MainWindow(QtWidgets.QMainWindow):
         statement = insert(Patient).values(
             **patient_dict
         )
+        
+        with self.sessionmaker() as session:
+            try:
+                session.execute(statement)
+                session.commit()
+                self.patients_table.select()
+                return True
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Ошибка", str(e))
+                return False
+
+    def create_delete_patient_dialog(self) -> QtWidgets.QDialog:
+        dialog = QtWidgets.QDialog(self)
+        dialog.ui = Ui_EnterIdForm()
+        dialog.ui.setupUi(dialog)
+        dialog.ui.titleLabel.setText("Удаление пациента")
+        return dialog
+
+    def collect_id_from_form(self, form: Ui_EnterIdForm) -> Result[int, str]:
+        try:
+            return Ok(int(form.idEdit.text()))
+        except ValueError:
+            return Err("Неверный формат ID. Ожидается число")
+
+    def try_delete_patient(self, patient_id: int) -> bool:
+        statement = delete(Patient).where(Patient.patient_id == patient_id)      
         
         with self.sessionmaker() as session:
             try:

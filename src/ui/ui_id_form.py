@@ -11,20 +11,25 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_CreatePatientForm(object):
-    def setupUi(self, CreatePatientForm):
-        CreatePatientForm.setObjectName("CreatePatientForm")
-        CreatePatientForm.resize(184, 81)
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(CreatePatientForm)
+class Ui_EnterIdForm(object):
+    def setupUi(self, EnterIdForm):
+        EnterIdForm.setObjectName("EnterIdForm")
+        EnterIdForm.resize(184, 102)
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(EnterIdForm)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setObjectName("verticalLayout")
+        self.titleLabel = QtWidgets.QLabel(EnterIdForm)
+        self.titleLabel.setText("")
+        self.titleLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.titleLabel.setObjectName("titleLabel")
+        self.verticalLayout.addWidget(self.titleLabel)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.label = QtWidgets.QLabel(CreatePatientForm)
+        self.label = QtWidgets.QLabel(EnterIdForm)
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
-        self.idEdit = QtWidgets.QLineEdit(CreatePatientForm)
+        self.idEdit = QtWidgets.QLineEdit(EnterIdForm)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -36,18 +41,18 @@ class Ui_CreatePatientForm(object):
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem)
         self.verticalLayout_2.addLayout(self.verticalLayout)
-        self.buttonBox = QtWidgets.QDialogButtonBox(CreatePatientForm)
+        self.buttonBox = QtWidgets.QDialogButtonBox(EnterIdForm)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout_2.addWidget(self.buttonBox)
 
-        self.retranslateUi(CreatePatientForm)
-        self.buttonBox.accepted.connect(CreatePatientForm.accept) # type: ignore
-        self.buttonBox.rejected.connect(CreatePatientForm.reject) # type: ignore
-        QtCore.QMetaObject.connectSlotsByName(CreatePatientForm)
+        self.retranslateUi(EnterIdForm)
+        self.buttonBox.accepted.connect(EnterIdForm.accept) # type: ignore
+        self.buttonBox.rejected.connect(EnterIdForm.reject) # type: ignore
+        QtCore.QMetaObject.connectSlotsByName(EnterIdForm)
 
-    def retranslateUi(self, CreatePatientForm):
+    def retranslateUi(self, EnterIdForm):
         _translate = QtCore.QCoreApplication.translate
-        CreatePatientForm.setWindowTitle(_translate("CreatePatientForm", "Dialog"))
-        self.label.setText(_translate("CreatePatientForm", "ID"))
+        EnterIdForm.setWindowTitle(_translate("EnterIdForm", "Dialog"))
+        self.label.setText(_translate("EnterIdForm", "ID"))
