@@ -1,5 +1,8 @@
 from enum import Enum
 from datetime import datetime
+from typing import Any
+
+from result import Ok, Err, Result, is_ok, is_err
 
 from PyQt5 import QtWidgets, QtSql, QtCore
 from sqlalchemy.sql import insert
@@ -125,7 +128,11 @@ class MainWindow(QtWidgets.QMainWindow):
         while True:
             result = dialog.exec()
             if result == QtWidgets.QDialog.DialogCode.Accepted:
-                if self.try_create_patient(dialog.ui):
+                patient_dict_result = self.collect_patient_from_form(dialog.ui)
+                if is_err(patient_dict_result):
+                    QtWidgets.QMessageBox.critical(self, "Ошибка", patient_dict_result.unwrap_err())
+                    continue
+                if self.try_create_patient(patient_dict_result.unwrap()):
                     return
                 else:
                     continue
@@ -138,25 +145,26 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.ui.setupUi(dialog)
         return dialog
 
-    def try_create_patient(self, form: Ui_CreatePatientForm) -> bool:
-        insert_dict = {}
-        insert_dict["first_name"] = form.nameEdit.text()
-        insert_dict["last_name"] = form.surnameEdit.text()
+    def collect_patient_from_form(self, form: Ui_CreatePatientForm) -> Result[dict[str, Any], str]:
+        patient_dict = {}
+        patient_dict["first_name"] = form.nameEdit.text()
+        patient_dict["last_name"] = form.surnameEdit.text()
         
         birthday_str = form.birthEdit.text()
         try:
-            insert_dict["date_of_birth"] = datetime.strptime(birthday_str, "%d.%m.%Y")
+            patient_dict["date_of_birth"] = datetime.strptime(birthday_str, "%d.%m.%Y")
         except ValueError:
-            QtWidgets.QMessageBox.critical(self, "Ошибка", "Неверный формат даты. Ожидается ДД.ММ.ГГГГ")
-            return False
+            return Err("Неверный формат даты. Ожидается ДД.ММ.ГГГГ")
 
-        insert_dict["gender"] = form.genderComboBox.currentText()
-        insert_dict["contact_number"] = form.phoneEdit.text()
-        insert_dict["email"] = form.emailEdit.text()
-        insert_dict["address"] = form.addressEdit.text()
-        
+        patient_dict["gender"] = form.genderComboBox.currentText()
+        patient_dict["contact_number"] = form.phoneEdit.text()
+        patient_dict["email"] = form.emailEdit.text()
+        patient_dict["address"] = form.addressEdit.text()
+        return Ok(patient_dict)
+
+    def try_create_patient(self, patient_dict: dict[str, Any]) -> bool:
         statement = insert(Patient).values(
-            **insert_dict
+            **patient_dict
         )
         
         with self.sessionmaker() as session:
