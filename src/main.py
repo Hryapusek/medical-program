@@ -10,7 +10,6 @@ from database_api.schema import Doctor
 
 if __name__ == '__main__':
     load_dotenv()
-    init_db()
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()
