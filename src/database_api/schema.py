@@ -2,6 +2,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey,
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.orm import sessionmaker
 from enum import Enum as PyEnum
+from .engine import main_engine
 
 # Base class for all models
 Base = declarative_base()
@@ -63,7 +64,14 @@ class Appointment(Base):
     def __repr__(self):
         return f"<Appointment(appointment_id={self.appointment_id}, patient_id={self.patient_id}, doctor_id={self.doctor_id})>"
 
-def init_db():
-    from .engine import main_engine
-    Base.metadata.create_all(main_engine)
+def init_db() -> bool:
+    if hasattr(init_db, "init_success"):
+        return True
+    try:
+        Base.metadata.create_all(main_engine)
+        init_db.init_success = True
+        return True
+    except Exception as e:
+        print(f"Error occurred while creating tables: {e}")
+        return False
 

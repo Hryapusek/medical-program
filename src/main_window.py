@@ -2,6 +2,7 @@ from PyQt5 import QtWidgets, QtSql, QtCore
 from ui.ui_main_window import Ui_MainWindow
 from settings import settings
 from enum import Enum
+from database_api.schema import init_db
 
 class ConnectionState(Enum):
     CONNECTED = 0
@@ -19,13 +20,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.database.setUserName(settings.database_username)
         self.database.setPassword(settings.database_password)
         
-        if self.database.open():
-            self.set_state(ConnectionState.CONNECTED)
-            self.fill_tables()
-        else:
-            QtWidgets.QMessageBox.critical(self, "Error", self.database.lastError().text())
-            self.set_state(ConnectionState.DISCONNECTED)
+        self.connect_to_database_clicked()
 
+    def connect_to_database_clicked(self):
+        if self.database.open():
+            if not init_db():
+                self.set_state(ConnectionState.DISCONNECTED)
+                return
+            self.fill_tables()
+            self.set_state(ConnectionState.CONNECTED)
+        else:
+            QtWidgets.QMessageBox.critical(self, "Ошибка подключения", "Не удалось подключиться к базе данных. Возможно ее забыли подключить?")
+            self.set_state(ConnectionState.DISCONNECTED)
 
     def fill_tables(self):
         self.patients_table = QtSql.QSqlTableModel(self, self.database)
@@ -71,18 +77,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tableView.setModel(self.appointments_table)
         self.ui.tableView.resizeColumnsToContents()
         
+    def clear_status_bar(self):
+        if hasattr(self, "status_widget"):
+            self.ui.statusbar.removeWidget(self.status_widget)
+        
+    def create_connect_button(self) -> QtWidgets.QPushButton:
+        button = QtWidgets.QPushButton("Подключиться")
+        button.clicked.connect(self.connect_to_database_clicked)
+        return button
+    
     def set_state(self, state: ConnectionState):
         print(f"Setting state to {state}")
+        self.clear_status_bar()
         central_status_widget = QtWidgets.QWidget()
+        self.status_widget = central_status_widget
         central_status_layout = QtWidgets.QHBoxLayout(central_status_widget)
         central_status_layout.addWidget(QtWidgets.QLabel("Состояние: "))
         state_label = QtWidgets.QLabel()
+        central_status_layout.addWidget(state_label)
         if state == ConnectionState.CONNECTED:
             state_label.setText("Подключено")
             state_label.setStyleSheet("color: green")
         else:
             state_label.setText("Не подключено")
             state_label.setStyleSheet("color: red")
-        central_status_layout.addWidget(state_label)
+            central_status_layout.addWidget(self.create_connect_button())
         self.ui.statusbar.addWidget(central_status_widget)
-            
