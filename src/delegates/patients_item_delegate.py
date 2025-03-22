@@ -42,5 +42,8 @@ class PatientsItemDelegate(QtWidgets.QStyledItemDelegate):
     return size_hint
 
   def paint(self, painter: QtGui.QPainter, option: QtWidgets.QStyleOptionViewItem, index):
-    doc_str = self.get_patient_str(self.find_patient_with_id(index.data())) # type: ignore
+    found = self.find_patient_with_id(index.data())
+    if found is None:
+      return
+    doc_str = self.get_patient_str(found) # type: ignore
     painter.drawText(option.rect, option.displayAlignment, doc_str)
