@@ -14,6 +14,8 @@ from ui.ui_id_form import Ui_EnterIdForm
 from ui.ui_create_doctor import Ui_CreateDoctorForm
 from ui.ui_create_appointment import Ui_CreateAppointmentForm
 
+from delegates.doctors_item_delegate import DoctorsItemDelegate
+
 from settings import settings
 from database_api.schema import Doctor, Patient, Appointment, init_db, main_engine
 
@@ -76,21 +78,21 @@ class MainWindow(QtWidgets.QMainWindow):
         )
 
     def setup_appointments_tab(self):
-        self.ui.addApointment.clicked.connect(
+        self.ui.addAppointment.clicked.connect(
             self.create_crud_button_handler(
                 self.create_create_appointment_dialog,
                 self.collect_create_appointment_from_form,
                 self.try_create_appointment,
             )
         )
-        self.ui.deleteApointment.clicked.connect(
+        self.ui.deleteAppointment.clicked.connect(
             self.create_crud_button_handler(
                 self.create_delete_appointment_dialog,
                 self.collect_id_from_form,
                 self.try_delete_appointment,
             )
         )
-
+        
     def connect_to_database_clicked(self):
         if self.database.open():
             if not init_db():
@@ -172,8 +174,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.appointments_table.setHeaderData(
             5, QtCore.Qt.Orientation.Horizontal, "Примечание"
         )
-        self.ui.apointmentTable.setModel(self.appointments_table)
-        self.ui.apointmentTable.resizeColumnsToContents()
+        self.ui.appointmentsTable.setModel(self.appointments_table)
+        self.ui.appointmentsTable.resizeColumnsToContents()
 
     def clear_status_bar(self):
         if hasattr(self, "status_widget"):
@@ -203,6 +205,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.doctorsTable.setEnabled(True)
             self.ui.patientsTable.setEnabled(True)
             self.ui.appointmentsTable.setEnabled(True)
+            self.post_connection_successfull_hook()
         else:
             state_label.setText("Не подключено")
             state_label.setStyleSheet("color: red")
@@ -449,3 +452,6 @@ class MainWindow(QtWidgets.QMainWindow):
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Ошибка", str(e))
                 return False
+            
+    def post_connection_successfull_hook(self) -> None:
+        self.ui.appointmentsTable.setItemDelegateForColumn(2, DoctorsItemDelegate(self.doctors_table, self))        
