@@ -13,7 +13,6 @@ class DoctorsItemDelegate(QtWidgets.QStyledItemDelegate):
                     + " - " + self.doctors_model.data(self.doctors_model.index(row, 3))) # type: ignore
 
   def find_doctor_with_id(self, id) -> Optional[int]:
-    print(f"find_doctor_with_id({id})")
     for row in range(self.doctors_model.rowCount()): # type: ignore
       if self.doctors_model.data(self.doctors_model.index(row, 0)) == id: # type: ignore
         return row
@@ -29,8 +28,15 @@ class DoctorsItemDelegate(QtWidgets.QStyledItemDelegate):
   def setEditorData(self, editor: QtWidgets.QComboBox, index):
     index.model().setData(index, editor.itemData(editor.currentIndex(), QtCore.Qt.ItemDataRole.UserRole)) # type: ignore
 
-  def setModelData(self, editor: QtWidgets.QComboBox, model: QtSql.QSqlTableModel, index):
+  def setModelData(self, editor: QtWidgets.QComboBox, model: QtSql.QSqlTableModel, index): # type: ignore
     model.setData(index, editor.itemData(editor.currentIndex(), QtCore.Qt.ItemDataRole.UserRole))
+
+  def sizeHint(self, option, index):
+    label = QtWidgets.QLabel()
+    label.setText(self.get_doctor_str(self.find_doctor_with_id(index.data()))) # type: ignore
+    size_hint = label.sizeHint()
+    label.destroy()
+    return size_hint
 
   def paint(self, painter: QtGui.QPainter, option, index):
     doc_str = self.get_doctor_str(self.find_doctor_with_id(index.data())) # type: ignore

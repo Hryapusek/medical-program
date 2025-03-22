@@ -15,6 +15,7 @@ from ui.ui_create_doctor import Ui_CreateDoctorForm
 from ui.ui_create_appointment import Ui_CreateAppointmentForm
 
 from delegates.doctors_item_delegate import DoctorsItemDelegate
+from delegates.patients_item_delegate import PatientsItemDelegate
 
 from settings import settings
 from database_api.schema import Doctor, Patient, Appointment, init_db, main_engine
@@ -387,13 +388,13 @@ class MainWindow(QtWidgets.QMainWindow):
         
         ui.doctorCombobox.clear()
         for doctor in doctors:
-            ui.doctorCombobox.addItem(doctor.first_name + " " + doctor.last_name) # type: ignore
+            ui.doctorCombobox.addItem(doctor.first_name + " " + doctor.last_name + " - " + doctor.specialty) # type: ignore
             ui.doctorCombobox.setItemData(ui.doctorCombobox.count() - 1, doctor.doctor_id, QtCore.Qt.ItemDataRole.UserRole)
         
         patients = self.sessionmaker().query(Patient).all()
         ui.patientCombobox.clear()
         for patient in patients:
-            ui.patientCombobox.addItem(patient.first_name + " " + patient.last_name) # type: ignore
+            ui.patientCombobox.addItem(patient.first_name + " " + patient.last_name + " - " + patient.date_of_birth.strftime("%d.%m.%Y")) # type: ignore
             ui.patientCombobox.setItemData(ui.patientCombobox.count() - 1, patient.patient_id, QtCore.Qt.ItemDataRole.UserRole)
         
         return dialog
@@ -454,4 +455,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return False
             
     def post_connection_successfull_hook(self) -> None:
-        self.ui.appointmentsTable.setItemDelegateForColumn(2, DoctorsItemDelegate(self.doctors_table, self))        
+        self.ui.appointmentsTable.setItemDelegateForColumn(1, PatientsItemDelegate(self.patients_table, self))
+        self.ui.appointmentsTable.setItemDelegateForColumn(2, DoctorsItemDelegate(self.doctors_table, self))
+        for table in [self.ui.patientsTable, self.ui.doctorsTable, self.ui.appointmentsTable]:
+            table.resizeColumnsToContents()
