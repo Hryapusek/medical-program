@@ -149,13 +149,10 @@ class MainWindow(QtWidgets.QMainWindow):
             3, QtCore.Qt.Orientation.Horizontal, "Дата и время"
         )
         self.appointments_table.setHeaderData(
-            4, QtCore.Qt.Orientation.Horizontal, "Примечание"
+            4, QtCore.Qt.Orientation.Horizontal, "Статус"
         )
         self.appointments_table.setHeaderData(
-            5, QtCore.Qt.Orientation.Horizontal, "Статус"
-        )
-        self.appointments_table.setHeaderData(
-            6, QtCore.Qt.Orientation.Horizontal, "Заметки"
+            5, QtCore.Qt.Orientation.Horizontal, "Примечание"
         )
         self.ui.tableView.setModel(self.appointments_table)
         self.ui.tableView.resizeColumnsToContents()
