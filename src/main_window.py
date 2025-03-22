@@ -1,6 +1,6 @@
 from enum import Enum
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from result import Ok, Err, Result, is_ok, is_err
 
@@ -12,9 +12,10 @@ from ui.ui_main_window import Ui_MainWindow
 from ui.ui_create_patient import Ui_CreatePatientForm
 from ui.ui_id_form import Ui_EnterIdForm
 from ui.ui_create_doctor import Ui_CreateDoctorForm
+from ui.ui_create_appointment import Ui_CreateAppointmentForm
 
 from settings import settings
-from database_api.schema import Doctor, Patient, init_db, main_engine
+from database_api.schema import Doctor, Patient, Appointment, init_db, main_engine
 
 from utils import Finally
 
@@ -39,6 +40,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sessionmaker = sessionmaker(main_engine)
         self.setup_patients_tab()
         self.setup_doctors_tab()
+        self.setup_appointments_tab()
         self.connect_to_database_clicked()
 
     def setup_patients_tab(self):
@@ -70,6 +72,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.create_delete_doctor_dialog,
                 self.collect_id_from_form,
                 self.try_delete_doctor,
+            )
+        )
+
+    def setup_appointments_tab(self):
+        self.ui.addApointment.clicked.connect(
+            self.create_crud_button_handler(
+                self.create_create_appointment_dialog,
+                self.collect_create_appointment_from_form,
+                self.try_create_appointment,
+            )
+        )
+        self.ui.deleteApointment.clicked.connect(
+            self.create_crud_button_handler(
+                self.create_delete_appointment_dialog,
+                self.collect_id_from_form,
+                self.try_delete_appointment,
             )
         )
 
@@ -154,8 +172,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.appointments_table.setHeaderData(
             5, QtCore.Qt.Orientation.Horizontal, "Примечание"
         )
-        self.ui.tableView.setModel(self.appointments_table)
-        self.ui.tableView.resizeColumnsToContents()
+        self.ui.apointmentTable.setModel(self.appointments_table)
+        self.ui.apointmentTable.resizeColumnsToContents()
 
     def clear_status_bar(self):
         if hasattr(self, "status_widget"):
@@ -182,10 +200,16 @@ class MainWindow(QtWidgets.QMainWindow):
         if state == ConnectionState.CONNECTED:
             state_label.setText("Подключено")
             state_label.setStyleSheet("color: green")
+            self.ui.doctorsTable.setEnabled(True)
+            self.ui.patientsTable.setEnabled(True)
+            self.ui.appointmentsTable.setEnabled(True)
         else:
             state_label.setText("Не подключено")
             state_label.setStyleSheet("color: red")
             central_status_layout.addWidget(self.create_connect_button())
+            self.ui.doctorsTable.setEnabled(False)
+            self.ui.patientsTable.setEnabled(False)
+            self.ui.appointmentsTable.setEnabled(False)
         self.ui.statusbar.addWidget(central_status_widget)
 
     def create_crud_button_handler(
@@ -196,6 +220,8 @@ class MainWindow(QtWidgets.QMainWindow):
     ):
         def button_handler():
             dialog = dialog_factory()
+            if dialog is None:
+                return
             fin = Finally(lambda: dialog.deleteLater())
             while True:
                 result = dialog.exec()
@@ -337,6 +363,87 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.doctors_table.select()
                 QtWidgets.QMessageBox.information(
                     self, "Удалено", "Доктор успешно удален"
+                )
+                return True
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Ошибка", str(e))
+                return False
+
+    # ---------- Create Appointment ----------
+    def create_create_appointment_dialog(self) -> Optional[QtWidgets.QDialog]:
+        dialog = QtWidgets.QDialog(self)
+        ui: Ui_CreateAppointmentForm = Ui_CreateAppointmentForm()
+        dialog.ui = ui
+        dialog.ui.setupUi(dialog)
+        try:
+            doctors = self.sessionmaker().query(Doctor).all()
+        except Exception:
+            QtWidgets.QMessageBox.critical(self, "Ошибка", "Произошла ошибка при получении данных")
+            self.set_state(ConnectionState.DISCONNECTED)
+            return None
+        
+        ui.doctorCombobox.clear()
+        for doctor in doctors:
+            ui.doctorCombobox.addItem(doctor.first_name + " " + doctor.last_name) # type: ignore
+            ui.doctorCombobox.setItemData(ui.doctorCombobox.count() - 1, doctor.doctor_id, QtCore.Qt.ItemDataRole.UserRole)
+        
+        patients = self.sessionmaker().query(Patient).all()
+        ui.patientCombobox.clear()
+        for patient in patients:
+            ui.patientCombobox.addItem(patient.first_name + " " + patient.last_name) # type: ignore
+            ui.patientCombobox.setItemData(ui.patientCombobox.count() - 1, patient.patient_id, QtCore.Qt.ItemDataRole.UserRole)
+        
+        return dialog
+
+    def collect_create_appointment_from_form(self, form: Ui_CreateAppointmentForm) -> Result[dict[str, Any], str]:
+        appointment_dict = {}
+        appointment_dict["patient_id"] = form.patientCombobox.itemData(form.patientCombobox.currentIndex(), QtCore.Qt.ItemDataRole.UserRole)
+        appointment_dict["doctor_id"] = form.doctorCombobox.itemData(form.doctorCombobox.currentIndex(), QtCore.Qt.ItemDataRole.UserRole)
+        try:
+            appointment_dict["appointment_date"] = datetime.strptime(
+                form.dateEdit.text(), "%d.%m.%Y %H:%M"
+            )
+        except ValueError:
+            return Err("Неверный формат даты. Ожидается ДД.ММ.ГГГГ ЧЧ:ММ")
+        
+        appointment_dict["status"] = form.statusEdit.text()
+        appointment_dict["notes"] = form.remarkEdit.toPlainText()
+        return Ok(appointment_dict)
+
+    def try_create_appointment(self, appointment_dict: dict[str, Any]) -> bool:
+        statement = insert(Appointment).values(**appointment_dict)
+
+        with self.sessionmaker() as session:
+            try:
+                session.execute(statement)
+                session.commit()
+                self.appointments_table.select()
+                QtWidgets.QMessageBox.information(
+                    self, "Добавлено", "Запись успешно добавлена"
+                )
+                return True
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Ошибка", str(e))
+                return False
+
+    # ---------- Delete Appointment ----------
+    def create_delete_appointment_dialog(self) -> QtWidgets.QDialog:
+        dialog = QtWidgets.QDialog(self)
+        dialog.ui = Ui_EnterIdForm()
+        dialog.ui.setupUi(dialog)
+        dialog.ui.titleLabel.setText("Удаление записи")
+        return dialog
+    
+    def try_delete_appointment(self, appointment_id: int) -> bool:
+        statement = delete(Appointment).where(Appointment.appointment_id == appointment_id)
+
+        with self.sessionmaker() as session:
+            try:
+                session.execute(statement)
+                session.commit()
+                self.appointments_table.select()
+                QtWidgets.QMessageBox.information(
+                    self, "Удалено", "Запись успешно удалена"
                 )
                 return True
             except Exception as e:
