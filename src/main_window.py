@@ -161,10 +161,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.appointments_table.select()
         self.appointments_table.setHeaderData(0, QtCore.Qt.Orientation.Horizontal, "ID")
         self.appointments_table.setHeaderData(
-            1, QtCore.Qt.Orientation.Horizontal, "ID пациента"
+            1, QtCore.Qt.Orientation.Horizontal, "Пациент"
         )
         self.appointments_table.setHeaderData(
-            2, QtCore.Qt.Orientation.Horizontal, "ID доктора"
+            2, QtCore.Qt.Orientation.Horizontal, "Врач"
         )
         self.appointments_table.setHeaderData(
             3, QtCore.Qt.Orientation.Horizontal, "Дата и время"
